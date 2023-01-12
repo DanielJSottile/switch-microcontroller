@@ -132,6 +132,7 @@ def main() -> int:
     def pick_up_new_column(vid: cv2.VideoCapture, ser: serial.Serial) -> None:
         nonlocal box, column, eggs
         eggs = 5
+        frame = getframe(vid)
         if column == 5:
             column = 0
             box += 1
@@ -150,6 +151,14 @@ def main() -> int:
             do(Press('a'), Wait(.4))(vid, ser)
 
         do(Press('s'), Wait(.4), Press('A'), Wait(.5))(vid, ser)
+
+    def undo_column(vid: cv2.VideoCapture, ser: serial.Serial) -> None:
+        nonlocal box, column
+        if column == 0:
+            column = 5
+            box -= 1
+        else:
+            column -= 1
 
     def hatched_all_eggs(frame: object) -> bool:
         return box == args.boxes - 1 and column == 5 and eggs == 0
@@ -206,10 +215,10 @@ def main() -> int:
     )
 
     tap_all_directions = do(
-        Press('d'), Wait(.5), 
-        Press('a'), Wait(.5),
-        Press('w'), Wait(.5),
-        Press('s'), Wait(.5), 
+        Press('d', .05), Wait(.5), 
+        Press('a', .05), Wait(.5),
+        Press('w', .05), Wait(.5),
+        Press('s', .05), Wait(.5), 
     )
 
     select = do(
@@ -408,7 +417,7 @@ def main() -> int:
                 do(Press('Y'), Wait(5),
                 # do the wiggle wiggle
                 tap_all_directions,
-                Press('l'), Wait(1), Wait(.5), Wait(.5)),
+                Press('l'), Wait(2)),
                 'REORIENT_INITIAL',
             ),
         ),
@@ -458,6 +467,11 @@ def main() -> int:
             ),
             (always_matches, do(Press('s'), Wait(.5)), 'MENU_HATCH'),
         ),
+        # 'VERIFY_MENU_HATCH': (
+        #     (
+
+        #     )
+        # ),
         'HATCH_5': (
             (
                 all_match(
@@ -513,8 +527,34 @@ def main() -> int:
                     pick_up_new_column,
 
                 ),
-                'TO_OVERWORLD',
+                'VERIFY_EGGS_MOVED',
             ),
+        ),
+        'VERIFY_EGGS_MOVED': (
+            (
+                all_match(
+                    match_text(
+                        'Egg',
+                        Point(y=5, x=896),
+                        Point(y=51, x=946),
+                        invert=True,
+                    ),
+                    match_px(Point(y=25, x=1056), Color(b=0, g=217, r=255)),
+                    match_px(Point(y=275, x=154), Color(b=0, g=217, r=255))
+                ), 
+                do(), 
+                'TO_OVERWORLD'
+            ),
+            (
+                any_match(
+                    match_px(Point(y=598, x=1160), Color(b=17, g=203, r=244)),
+                    match_px(Point(y=598, x=1160), Color(b=0, g=205, r=255)),
+                ),
+                # try it again
+                undo_column,
+                'NEXT_COLUMN',
+            ),
+            (always_matches, do(Press('B'), Wait(1)), 'VERIFY_EGGS_MOVED'),
         ),
         'TO_OVERWORLD': (
             (
@@ -522,7 +562,7 @@ def main() -> int:
                     match_px(Point(y=598, x=1160), Color(b=17, g=203, r=244)),
                     match_px(Point(y=598, x=1160), Color(b=0, g=205, r=255)),
                 ),
-                do(Press('Y'), Wait(5), tap_w, tap_s, Wait(.5)),
+                do(Press('Y'), Wait(5), tap_w, tap_s, Press('l'), Wait(2)),
                 'REORIENT_HATCH',
             ),
             (always_matches, do(Press('B'), Wait(1)), 'TO_OVERWORLD'),
