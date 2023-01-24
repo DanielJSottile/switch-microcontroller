@@ -41,6 +41,7 @@ def main() -> int:
     parser.add_argument('--serial', default=SERIAL_DEFAULT)
     parser.add_argument('--boxes', type=int, required=True)
     parser.add_argument('--silent', type=bool, default=False)
+    parser.add_argument('--initial', type=str, default='INITIAL')
     args = parser.parse_args()
 
     require_tesseract()
@@ -51,7 +52,6 @@ def main() -> int:
 
     start_time = 0.0
     shiny = False
-    alarm = False
     box = 0
     check_box = 0
     column = 0
@@ -74,28 +74,9 @@ def main() -> int:
     def restart_eggs(frame: object) -> bool:
         return time.monotonic() > start_time + 30 * 60 
      
-
     def set_shiny() -> None:
-        nonlocal shiny, alarm
-        if not shiny:
-            shiny = True
-        if shiny and not args.silent and not alarm: 
-            # alarm
-            do(Press('!'),
-            Wait(1),
-            Press('.'),
-            Wait(.5),
-            Press('!'),
-            Wait(1),
-            Press('.'),
-            Wait(.5),
-            Press('!'),
-            Wait(1),
-            Press('.'),
-            Wait(.5),
-            )(vid, ser)
-            alarm = True
-            print('DEBUG: *****SHINY DETECTED!*****')
+        nonlocal shiny
+        shiny = True   
 
     def are_we_done(frame: object) -> bool:
         return egg_count >= args.boxes * 30
@@ -183,6 +164,22 @@ def main() -> int:
             print(f'DEBUG: Shiny? -- {match_px(Point(y=78, x=1139), Color(b=253, g=255, r=255))(frame)}')
             if match_px(Point(y=78, x=1139), Color(b=253, g=255, r=255))(frame):
                 set_shiny()
+                # alarm
+                if not args.silent:
+                    do(Press('!'),
+                    Wait(1),
+                    Press('.'),
+                    Wait(.5),
+                    Press('!'),
+                    Wait(1),
+                    Press('.'),
+                    Wait(.5),
+                    Press('!'),
+                    Wait(1),
+                    Press('.'),
+                    Wait(.5),
+                    )(vid, ser)
+                    print('DEBUG: *****SHINY DETECTED!*****')
 
         for direction in 'dadad':
             _detect_shiny()
@@ -628,7 +625,7 @@ def main() -> int:
     }
 
     with serial.Serial(args.serial, 9600) as ser:
-        run(vid=vid, ser=ser, initial='INITIAL', states=states)
+        run(vid=vid, ser=ser, initial=args.initial, states=states)
 
 
 if __name__ == '__main__':
