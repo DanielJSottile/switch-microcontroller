@@ -8,8 +8,8 @@ import numpy
 import serial
 
 from scripts.engine import all_match
-from scripts.engine import any_match
 from scripts.engine import always_matches
+from scripts.engine import any_match
 from scripts.engine import Color
 from scripts.engine import do
 from scripts.engine import get_text
@@ -24,20 +24,24 @@ from scripts.engine import SERIAL_DEFAULT
 from scripts.engine import Wait
 from scripts.engine import Write
 
-# Initial State: 
-# IMPORTANT: Plese read all steps here to insure the script functions normally:
+# Initial State:
+# IMPORTANT: Plese read all steps here to insure the script
+# functions normally:
 # 1) Have the parents you want in your party (you may have up to 6)
-# 2) Make sure you have all sandwich recipes and that you have enough ingredients
+# 2) Make sure you have all sandwich recipes and that you have enough
+# ingredients
 # for sandwich 25.
-# 3) Have your Flame Body / Magma Armor Pokemon in slot 1 of the box before the
+# 3) Have your Flame Body / Magma Armor Pokemon in slot 1 of the box
+# before the
 # currently saved one
 # 4) Have x number of boxes empty starting at the current one.
 # 5) Have nicknames off and auto send to boxes
 # 6) Save in front of Area Zero Gate (the rocky section outside)
 # 7) Progress up to overworld.
-# 8) IMPORTANT: to detect shinies, set the background color of boxes that will
-# recieve shinies to BACKGROUND 15, or change the images in shiny_check_images.
+# 8) IMPORTANT: to detect shinies, set the background color of boxes
+# that will recieve shinies to BACKGROUND 15
 # 9) Start script, including connecting to controller
+
 
 def main() -> int:
     parser = argparse.ArgumentParser()
@@ -75,22 +79,23 @@ def main() -> int:
         egg_count = 0
 
     def restart_eggs(frame: object) -> bool:
-        return time.monotonic() > start_time + 30 * 60 
-     
+        return time.monotonic() > start_time + 30 * 60
+
     def set_shiny() -> None:
         nonlocal shiny
-        shiny = True   
+        shiny = True
 
     def are_we_done(frame: object) -> bool:
         return egg_count >= args.boxes * 30
 
-    def bye(vid: object, ser: object) -> None:
-        do(# save the game, exit
+    def bye(vid: cv2.VideoCapture, ser: serial.Serial) -> None:
+        do(  # save the game, exit
             Press('B'), Wait(2),
             Press('R'), Wait(2),
             Press('A'), Wait(3),
             Press('A'), Wait(1),
-            Press('H'))(vid, ser)
+            Press('H'),
+        )(vid, ser)
         raise SystemExit
 
     def eggs_done(frame: object) -> bool:
@@ -102,11 +107,17 @@ def main() -> int:
 
     def column_matches(frame: numpy.ndarray) -> bool:
         x = 372 + 84 * column
-        return any_match(match_px(Point(y=169, x=x), Color(b=42, g=197, r=213)), match_px(Point(y=169, x=x), Color(b=0, g=223, r=255)))(frame)
+        return any_match(
+            match_px(Point(y=169, x=x), Color(b=42, g=197, r=213)),
+            match_px(Point(y=169, x=x), Color(b=0, g=223, r=255)),
+        )(frame)
 
     def multiselect_matches(frame: numpy.ndarray) -> bool:
         x = 300 + 84 * column
-        return any_match(match_px(Point(y=133, x=x), Color(b=38, g=193, r=226)), match_px(Point(y=133, x=x), Color(b=0, g=223, r=255)))(frame)
+        return any_match(
+            match_px(Point(y=133, x=x), Color(b=38, g=193, r=226)),
+            match_px(Point(y=133, x=x), Color(b=0, g=223, r=255)),
+        )(frame)
 
     def column_done(vid: cv2.VideoCapture, ser: serial.Serial) -> None:
         nonlocal box, column, eggs
@@ -122,7 +133,9 @@ def main() -> int:
     def box_done(frame: object) -> bool:
         return column == 0
 
-    def get_box(vid: cv2.VideoCapture, ser: object) -> None:
+    box_name = 'unknown'
+
+    def get_box(vid: cv2.VideoCapture, ser: serial.Serial) -> None:
         nonlocal box_name
         box_name = get_text(
             getframe(vid),
@@ -146,7 +159,7 @@ def main() -> int:
     def all_done(frame: object) -> bool:
         return box == args.boxes
 
-    def reset_vars(vid: object, ser: object) -> None:
+    def reset_vars(vid: cv2.VideoCapture, ser: serial.Serial) -> None:
         nonlocal box, check_box, column, eggs, egg_count
         box = 0
         check_box = 0
@@ -159,27 +172,40 @@ def main() -> int:
         nonlocal check_box
 
         def _detect_shiny() -> None:
-            match_px(Point(y=78, x=1139), Color(b=248, g=250, r=255))
+            match_px(
+                Point(y=78, x=1139),
+                Color(b=248, g=250, r=255),
+            )
 
             frame = getframe(vid)
             # check for white pixel of shiny icon
-            print(f'DEBUG: Shiny? -- {match_px(Point(y=78, x=1139), Color(b=253, g=255, r=255))(frame)}')
-            if match_px(Point(y=78, x=1139), Color(b=253, g=255, r=255))(frame):
+            is_shiny = match_px(
+                Point(y=78, x=1139),
+                Color(b=253, g=255, r=255),
+            )(frame)
+            print(
+                f'DEBUG: Shiny? -- {is_shiny}',
+            )
+            if match_px(
+                Point(y=78, x=1139),
+                Color(b=253, g=255, r=255),
+            )(frame):
                 set_shiny()
                 # alarm
                 if not args.silent:
-                    do(Press('!'),
-                    Wait(1),
-                    Press('.'),
-                    Wait(.5),
-                    Press('!'),
-                    Wait(1),
-                    Press('.'),
-                    Wait(.5),
-                    Press('!'),
-                    Wait(1),
-                    Press('.'),
-                    Wait(.5),
+                    do(
+                        Press('!'),
+                        Wait(1),
+                        Press('.'),
+                        Wait(.5),
+                        Press('!'),
+                        Wait(1),
+                        Press('.'),
+                        Wait(.5),
+                        Press('!'),
+                        Wait(1),
+                        Press('.'),
+                        Wait(.5),
                     )(vid, ser)
                     print('DEBUG: *****SHINY DETECTED!*****')
 
@@ -204,36 +230,61 @@ def main() -> int:
     def check_done_w_shiny(frame: object) -> bool:
         return shiny and (check_box == args.boxes)
 
-    def initialize_shiny_check(vid: object, ser: object) -> None:
+    def init_shiny_check(vid: cv2.VideoCapture, ser: serial.Serial) -> None:
         do(Wait(1), Press('A'), Wait(3))(vid, ser)
         if args.boxes > 1:
             for _ in range(args.boxes - 1):
                 do(Press('L'), Wait(.5))(vid, ser)
-        do(# action to make sure wallpaper shows up
-        Press('A'), Wait(1), Press('A'), Wait(1), Press('A'), Wait(1))(vid, ser)
+        do(  # action to make sure wallpaper shows up
+            Press('A'), Wait(1), Press('A'), Wait(1), Press('A'), Wait(1),
+        )(vid, ser)
 
     select = do(
         Press('-'), Wait(.5), Press('s', duration=.8), Wait(.4),
         Press('A'), Wait(.5),
     )
 
-    box_name = 'unknown'
-    world_matches = any_match(match_px(Point(y=598, x=1160), Color(b=17, g=203, r=244)),match_px(Point(y=598, x=1160), Color(b=0, g=205, r=255)))
-    boxes_matches = any_match(match_px(Point(y=241, x=1161), Color(b=28, g=183, r=209)),match_px(Point(y=234, x=1151), Color(b=0, g=204, r=255)))
-    pos0_matches = any_match(match_px(Point(y=169, x=372), Color(b=42, g=197, r=213)), match_px(Point(y=169, x=372), Color(b=0, g=204, r=255)))
-    pos1_matches = any_match(match_px(Point(y=251, x=366), Color(b=47, g=189, r=220)), match_px(Point(y=251, x=366), Color(b=0, g=204, r=255)))
-    sel_text_matches = any_match(match_text(
-        'Draw Selection Box',
-        Point(y=679, x=762),
-        Point(y=703, x=909),
-        invert=True,
-    ),
-        match_text(
-        'Draw Selection Box',
-        Point(y=672, x=687),
-        Point(y=710, x=831),
-        invert=True,
+    world_matches = any_match(
+        match_px(
+            Point(y=598, x=1160), Color(
+                b=17, g=203, r=244,
+            ),
+        ), match_px(Point(y=598, x=1160), Color(b=0, g=205, r=255)),
     )
+    boxes_matches = any_match(
+        match_px(
+            Point(y=241, x=1161), Color(
+                b=28, g=183, r=209,
+            ),
+        ), match_px(Point(y=234, x=1151), Color(b=0, g=204, r=255)),
+    )
+    pos0_matches = any_match(
+        match_px(
+            Point(y=169, x=372), Color(
+                b=42, g=197, r=213,
+            ),
+        ), match_px(Point(y=169, x=372), Color(b=0, g=204, r=255)),
+    )
+    pos1_matches = any_match(
+        match_px(
+            Point(y=251, x=366), Color(
+                b=47, g=189, r=220,
+            ),
+        ), match_px(Point(y=251, x=366), Color(b=0, g=204, r=255)),
+    )
+    sel_text_matches = any_match(
+        match_text(
+            'Draw Selection Box',
+            Point(y=679, x=762),
+            Point(y=703, x=909),
+            invert=True,
+        ),
+        match_text(
+            'Draw Selection Box',
+            Point(y=672, x=687),
+            Point(y=710, x=831),
+            invert=True,
+        ),
     )
 
     states = {
@@ -338,20 +389,31 @@ def main() -> int:
             (
                 # if it fails, go back to the beginning
                 always_matches,
-                do(Press('B'), Wait(2), Press('Y'), Wait(.5), Press('A'), Wait(10),),
+                do(
+                    Press('B'), Wait(2), Press('Y'),
+                    Wait(.5), Press('A'), Wait(10),
+                ),
                 'INITIAL',
             ),
         ),
         'MASH_A': (
-            ( 
-                match_text(
-                    'You took the Egg!',
-                    Point(y=540, x=351),
-                    Point(y=640, x=909),
-                    invert=True,
+            (
+                any_match(
+                    match_text(
+                        'There’s a Pokémon Egg inside!',
+                        Point(y=543, x=351),
+                        Point(y=591, x=705),
+                        invert=True,
+                    ),
+                    match_text(
+                        'It’s another Pokémon Egg!',
+                        Point(y=543, x=351),
+                        Point(y=591, x=659),
+                        invert=True,
+                    ),
                 ),
-                do(increment_egg_count, Press('A'), Wait(1)),
-                'MASH_A',
+                do(Wait(1), Press('A'), Wait(1)),
+                'VERIFY_EGG',
             ),
             (
                 all_match(
@@ -364,16 +426,30 @@ def main() -> int:
             ),
             (always_matches, do(), 'WAIT'),
         ),
+        'VERIFY_EGG': (
+            (
+                match_text(
+                    'You took the Egg!',
+                    Point(y=540, x=351),
+                    Point(y=640, x=909),
+                    invert=True,
+                ),
+                do(increment_egg_count, Press('A'), Wait(1)),
+                'MASH_A',
+            ),
+            (always_matches, do(Press('A'), Wait(1)), 'VERIFY_EGG'),
+        ),
         'WAIT': (
             (
-                # if we have either equal or more eggs than our boxes, go to hatching stage
+                # if we have either equal or more eggs than our boxes,
+                # go to hatching stage
                 are_we_done,
                 do(
                     reset_egg_count,
                     # exit picnic
                     Press('Y'), Wait(.5), Press('A'), Wait(10),
                     # open menu
-                    Press('X'), Wait(1)
+                    Press('X'), Wait(1),
                 ),
                 'MENU_SWITCH',
             ),
@@ -404,9 +480,13 @@ def main() -> int:
                     Press('s'), Wait(.5),
                     # move second mon
                     select,
-                    Press('d'), Wait(.5), Press('d'), Wait(.5), Press('w'), Wait(.5), Press('A'), Wait(.5),
+                    Press('d'), Wait(.5), Press('d'), Wait(.5), Press(
+                        'w',
+                    ), Wait(.5), Press('A'), Wait(.5),
                     # re-orient, exit menu
-                    Press('a'), Wait(.5), Press('R'), Wait(.5), Press('B'), Wait(3), Press('B'), Wait(3),
+                    Press('a'), Wait(.5), Press('R'), Wait(.5), Press(
+                        'B',
+                    ), Wait(3), Press('B'), Wait(3),
                 ),
                 'INITIAL_HATCH',
             ),
@@ -432,8 +512,7 @@ def main() -> int:
                 any_match(
                     match_px(Point(y=156, x=390), Color(b=31, g=190, r=216)),
                     match_px(Point(y=156, x=390),  Color(b=0, g=225, r=255)),
-                )
-                ,
+                ),
                 do(Press('d'), Wait(.5)),
                 'MENU_MOVE_RIGHT',
             ),
@@ -469,7 +548,7 @@ def main() -> int:
             (always_matches, do(Press('s'), Wait(.5)), 'PICKUP_TO_1'),
         ),
         'PICKUP_TO_PARTY': (
-            (   
+            (
                 any_match(
                     match_px(Point(y=255, x=248), Color(b=22, g=198, r=229)),
                     match_px(Point(y=255, x=248), Color(b=0, g=219, r=255)),
@@ -589,9 +668,9 @@ def main() -> int:
         'DEPOSIT_SELECTION': (
             (
                 any_match(
-                match_px(Point(y=217, x=27), Color(b=15, g=200, r=234)),
-                match_px(Point(y=217, x=27), Color(b=0, g=219, r=255)),
-            ),
+                    match_px(Point(y=217, x=27), Color(b=15, g=200, r=234)),
+                    match_px(Point(y=217, x=27), Color(b=0, g=219, r=255)),
+                ),
                 do(Press('A'), Wait(1)),
                 'DEPOSIT_SELECTION',
             ),
@@ -626,7 +705,7 @@ def main() -> int:
             (
                 boxes_matches,
                 # press A on boxes menu
-                initialize_shiny_check,
+                init_shiny_check,
                 'CHECK_SHINY',
             ),
             (always_matches, do(Press('s'), Wait(.75)), 'CHECK_SHINY_MENU'),
@@ -642,7 +721,7 @@ def main() -> int:
         'RESET_SEQUENCE': (
             (
                 # only restart the game if no shiny
-                lambda frame: not shiny, 
+                lambda frame: not shiny,
                 do(
                     # hard reset the game via home
                     Press('H'), Wait(1),
@@ -651,13 +730,13 @@ def main() -> int:
                     # restart the game
                     Press('A'), Wait(2),
                     Press('A'), Wait(20),
-                    Press('A'), Wait(22)
+                    Press('A'), Wait(22),
                 ),
-                'INITIAL'
+                'INITIAL',
             ),
             # catch all in case it enters this stage with a shiny detected
-            (always_matches, bye, 'INVALID')
-        )
+            (always_matches, bye, 'INVALID'),
+        ),
     }
 
     with serial.Serial(args.serial, 9600) as ser:
